@@ -61,8 +61,9 @@ Face Recognition and Attendance Logging :
 
 ## Attendance Sheet can be accessed on desktop as well as on smartphone with automatic updation
 - ### Attendance Sheet on 07-06-2024 
-  ![IMG_20240608_104856](https://github.com/Future-Quantum/attendance/assets/147901491/5423477b-50f3-4696-b2c1-2096d01cc4b4)
+  ![image](https://github.com/user-attachments/assets/180d2f06-c084-497c-9636-b89a4e1ece30)
+
 - ### Attendance Sheet on 08-06-2024
- ![image](https://github.com/user-attachments/assets/84875177-e77d-4ac9-a02b-ed2605dbe634)
+  ![image](https://github.com/user-attachments/assets/84875177-e77d-4ac9-a02b-ed2605dbe634)
 
 

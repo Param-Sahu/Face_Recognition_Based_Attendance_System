@@ -14,7 +14,7 @@ In the absence of an internet connection, it print a message indicating the lack
 ## Installation
 1. **Clone the Repository :**
 ```bash
-git clone https://github.com/Future-Quantum/attendance.git    
+https://github.com/Param-Sahu/Face_Recognition_Based_Attendance_System.git   
 ```
 2. **Install Dependencies :**
 - OpenCV and Face_Recognition : 

@@ -1,38 +1,60 @@
+import threading
 import cv2
 import face_recognition
 from face_encoding import load_images_and_encode_faces
 import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+import numpy as np
 
-# Google Sheets setup
-try:
-    scope = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_file('credentials.json', scopes=scope)
-    client = gspread.authorize(creds)
+# Global variables for threading
+known_face_encodings = []
+known_face_names = []
+sheet = None
+online = False
 
-    sheets_id = "1SE_HuRfo36SafAMuuOz27C0siUQ1ziXkvxzoSa9T1L4"
-    workbook = client.open_by_key(sheets_id)
+# Function to load face encodings in a separate thread
+def load_faces_thread():
+    global known_face_encodings, known_face_names
+    known_face_encodings, known_face_names = load_images_and_encode_faces()
 
-    # Create a new sheet for today's date if it doesn't exist
-    today_date_str = datetime.datetime.now().strftime("%d-%m-%Y")
+# Function to authorize Google Sheets in a separate thread
+def authorize_google_sheets_thread():
+    global sheet, online
     try:
-        sheet = workbook.worksheet(today_date_str)
-    except gspread.exceptions.WorksheetNotFound:
-        sheet = workbook.add_worksheet(title=today_date_str, rows="100", cols="20")
-        sheet.append_row(["Name", "Timestamp"])
+        scope = ["https://www.googleapis.com/auth/spreadsheets"]
+        creds = Credentials.from_service_account_file('credentials.json', scopes=scope)
+        client = gspread.authorize(creds)
 
-    online = True
-except Exception as e:
-    print("No Internet connection. Make sure you are connected to Internet.")
-    online = False
+        sheets_id = "1SE_HuRfo36SafAMuuOz27C0siUQ1ziXkvxzoSa9T1L4"
+        workbook = client.open_by_key(sheets_id)
 
-# Load known faces
-known_face_encodings, known_face_names = load_images_and_encode_faces()
+        # Create a new sheet for today's date if it doesn't exist
+        today_date_str = datetime.datetime.now().strftime("%d-%m-%Y")
+        try:
+            sheet = workbook.worksheet(today_date_str)
+        except gspread.exceptions.WorksheetNotFound:
+            sheet = workbook.add_worksheet(title=today_date_str, rows="100", cols="20")
+            sheet.append_row(["Name", "Timestamp"])
+
+        online = True
+    except Exception as e:
+        print("No Internet connection. Make sure you are connected to Internet.")
+        online = False
+
+# Start threads for loading faces and authorizing Google Sheets
+faces_thread = threading.Thread(target=load_faces_thread)
+sheets_thread = threading.Thread(target=authorize_google_sheets_thread)
+faces_thread.start()
+sheets_thread.start()
+
+# Wait for threads to complete
+faces_thread.join()
+sheets_thread.join()
 
 # Function to check if attendance is already marked for the day for a student
 def attendance_marked_today(student_name):
-    if not online:
+    if not online or student_name == "Unknown":
         return False
 
     records = sheet.get_all_records()
@@ -40,8 +62,7 @@ def attendance_marked_today(student_name):
     for record in records:
         if record['Name'] == student_name:
             try:
-                timestamp = datetime.datetime.strptime(record['Timestamp'], "%Y-%m-%d %H:%M:%S.%f")
-                timestamp = timestamp.replace(microsecond=0)
+                timestamp = datetime.datetime.strptime(record['Timestamp'], "%Y-%m-%d %H:%M:%S")
                 if timestamp.date() == today:
                     return True
             except (ValueError, TypeError):
@@ -53,17 +74,17 @@ video_capture = cv2.VideoCapture(0)
 
 # Initialize loop variables
 start_time = datetime.datetime.now()
-duration_seconds = 25
+duration_seconds = 1000  # Duration for the loop in seconds
 end_time = start_time + datetime.timedelta(seconds=duration_seconds)
 
 # Set to keep track of recorded faces
 recorded_faces = set()
 
 try:
-    while datetime.datetime.now() < end_time and online: # Make sure you are connected to internet.
+    while datetime.datetime.now() < end_time and online:  # Make sure you are connected to internet.
         # Capture frame-by-frame
         ret, frame = video_capture.read()
-    
+
         # Check if the frame was captured successfully
         if not ret or frame is None:
             print("Error: Failed to capture frame. Exiting...")
@@ -71,6 +92,8 @@ try:
 
         # Resize frame to 1/4 size for faster processing
         try:
+            # Flip the frame horizontally to correct the mirrored image
+            frame = cv2.flip(frame, 1)
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
         except Exception as e:
             print("Error while resizing frame:", e)
@@ -102,12 +125,18 @@ try:
             # Compare each face encoding to the known face encodings
             matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
             name = "Unknown"
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = np.argmin(face_distances)
+            if matches[best_match_index]:
+                confidence = 1 - face_distances[best_match_index]
 
             # If a match is found, use the name of the known face
             if True in matches:
                 first_match_index = matches.index(True)
                 name = known_face_names[first_match_index]
-
+                print(f"Confidence: {name} : {confidence:.2f}")
+                if confidence <= 0.55:
+                    name = "Unknown"
             face_names.append(name)
 
             # Update attendance if not already marked for the day
@@ -122,13 +151,12 @@ try:
             (top, right, bottom, left) = [value * 4 for value in (top, right, bottom, left)]
 
             # Draw a rectangle around the face
-            cv2.rectangle(frame, (left, top), (right, bottom), (0,  255,0), 2)
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
 
             # Draw a label with a name below the face
             cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
             font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 2)
-
+            cv2.putText(frame, f"{name} ({confidence:.2f})", (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 2)
             # Display if attendance is already marked for the day
             if name != "Unknown" and attendance_marked_today(name):
                 cv2.putText(frame, "Attendance has been Marked Today", (left + 6, bottom + 20), font, 0.5, (255, 0, 0), 1)

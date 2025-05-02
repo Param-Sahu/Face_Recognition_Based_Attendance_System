@@ -1,0 +1,7 @@
+<<<<<<< HEAD
+pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib gspread opencv-python face_recognition cmake
+
+Install opencv-python and opencv-python-contrib version 4.9.0 , numpy version < 2 (preferable == 1.26.4)
+=======
+pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib gspread opencv-python face_recognition cmake
+>>>>>>> 08ae65d609893549b337495bc3bc8a5f849facc2

@@ -14,19 +14,7 @@ def load_images_and_encode_faces(directory='attendance_project/images', pickle_f
     tuple: A tuple containing two lists. The first list contains the known face encodings,
            and the second list contains the corresponding names of the faces.
     """
-<<<<<<< HEAD
     if __name__=="__main__":
-=======
-    if os.path.exists(pickle_file):
-        # Load encodings from the pickle file if it exists
-        with open(pickle_file, 'rb') as file:
-            data = pickle.load(file)
-            known_face_encodings = data['encodings']
-            known_face_names = data['names']
-            if __name__ == "__main__":
-                print("Loaded face encodings from pickle file.")
-    else:
->>>>>>> 08ae65d609893549b337495bc3bc8a5f849facc2
         # Generate encodings and save them to the pickle file
         known_face_encodings = []
         known_face_names = []
@@ -46,7 +34,6 @@ def load_images_and_encode_faces(directory='attendance_project/images', pickle_f
             pickle.dump(data, file)
             if __name__ == "__main__":
                 print("Face encodings saved to pickle file.")
-<<<<<<< HEAD
     else:
         if os.path.exists(pickle_file):
             # Load encodings from the pickle file if it exists
@@ -58,15 +45,9 @@ def load_images_and_encode_faces(directory='attendance_project/images', pickle_f
         else:
             print("Pickle file not found. Please generate encodings first.")
             return [], []
-=======
->>>>>>> 08ae65d609893549b337495bc3bc8a5f849facc2
 
     return known_face_encodings, known_face_names
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 08ae65d609893549b337495bc3bc8a5f849facc2
 if __name__ == "__main__":
     load_images_and_encode_faces()

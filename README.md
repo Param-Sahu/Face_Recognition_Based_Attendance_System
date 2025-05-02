@@ -40,6 +40,8 @@ pip install opencv-python face-recognition
 - It will attempt to recognize faces from the frames.
 - If a face is recognized and attendance for the day is not already marked, it will log the name and timestamp in the Google Sheets document.
 - If there is no internet connection, it will print "No internet connection." and stop the program.
+  ![image](https://github.com/user-attachments/assets/013fefb7-8612-4ad0-83aa-75acc949179a)
+
 
 ## How It Works
 Loading and Encoding Faces :
